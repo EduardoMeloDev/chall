@@ -99,6 +99,7 @@ contract ETHPool is AccessControl, Ownable {
 
     function getReward(address _sender) public onlyOwner {
         require(depositReward, "no rewards available yet to be collected");
+        require(calculateReward(_sender) > 0, "there are no rewards yet");
         uint256 returnReward;
         returnReward = calculateReward(_sender);
         userInfos[_sender].lastAmountReward += returnReward;
@@ -108,8 +109,14 @@ contract ETHPool is AccessControl, Ownable {
 
     function withdrawAmountAndReward(address _sender) public {
         require(depositReward, "The rewards isn't deposited yet.");
+        require(calculateReward(_sender) > 0, "there are no rewards yet");
+        require(userInfos[_sender].amount > 0, "there are amount for withdraw");
         uint256 totalRewardStake = calculateReward(_sender);
         uint256 total = userInfos[_sender].amount + totalRewardStake;
+        userInfos[_sender].amount = 0;
+        userInfos[_sender].startTimestamp = 0;
+        userInfos[_sender].lastAmountReward = 0;
+        
         address payable from = payable(_sender);
         from.transfer(total);
     }
@@ -119,6 +126,9 @@ contract ETHPool is AccessControl, Ownable {
         uint256 total = userInfos[_sender].amount;
         address payable from = payable(_sender);
         totalStaked -= total;
+        userInfos[_sender].amount = 0;
+        userInfos[_sender].startTimestamp = 0;
+        userInfos[_sender].lastAmountReward = 0;
         
         from.transfer(total);
     }
